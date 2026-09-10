@@ -1,16 +1,20 @@
 using EstoqueVeiculos.Api.Database;
 using EstoqueVeiculos.Api.Repositories;
 using EstoqueVeiculos.Api.Services;
-using EstoqueVeiculos.Api.DTOs;
+
+
 
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<OracleConnectionFactory>();
 builder.Services.AddScoped<VeiculoRepository>();
 builder.Services.AddScoped<VeiculoService>();
+builder.Services.AddScoped<ProprietarioRepository>();
+builder.Services.AddScoped<ProprietarioService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
 
 
 
@@ -41,53 +45,10 @@ app.MapGet("/teste-oracle", async (OracleConnectionFactory connectionFactory) =>
     });
 });
 
-app.MapGet("/veiculos", async (
-    string? marca,
-    string? situacao,
-    VeiculoRepository repository) =>
-{
-    var veiculos = await repository.ListarAsync(marca, situacao);
 
-    return Results.Ok(veiculos);
-});
 
-app.MapPost("/veiculos", async (
-    VeiculoCreateDto dto,
-    VeiculoService service) =>
-{
-    try
-    {
-        await service.CriarAsync(dto);
 
-        return Results.Created(
-            "/veiculos",
-            new { mensagem = "Veículo cadastrado com sucesso." }
-        );
-    }
-    catch (ArgumentException ex)
-    {
-        return Results.BadRequest(new
-        {
-            mensagem = ex.Message
-        });
-    }
-});
 
-app.MapGet("/veiculos/{id:int}", async (
-    int id,
-    VeiculoRepository repository) =>
-{
-    var veiculo = await repository.BuscarPorIdAsync(id);
-
-    if (veiculo is null)
-    {
-        return Results.NotFound(new
-        {
-            mensagem = "Veículo não encontrado."
-        });
-    }
-
-    return Results.Ok(veiculo);
-});
+app.MapControllers();
 
 app.Run();
