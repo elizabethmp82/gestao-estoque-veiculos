@@ -230,4 +230,26 @@ public class ProprietarioRepository
 
     await command.ExecuteNonQueryAsync();
 }
+
+public async Task<bool> ExistePorVeiculoAsync(int veiculoId)
+{
+    using var connection = _connectionFactory.CreateConnection();
+    await connection.OpenAsync();
+
+    using var command = connection.CreateCommand();
+
+    command.CommandText = @"
+        SELECT COUNT(*)
+        FROM PROPRIETARIO
+        WHERE VEICULOID = :veiculoId
+    ";
+
+    command.Parameters.Add(
+        new OracleParameter("veiculoId", veiculoId)
+    );
+
+    var resultado = await command.ExecuteScalarAsync();
+
+    return Convert.ToInt32(resultado) > 0;
+}
 }

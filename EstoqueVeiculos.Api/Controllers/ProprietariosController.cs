@@ -27,19 +27,12 @@ public class ProprietariosController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Criar(ProprietarioCreateDto dto)
     {
-        try
-        {
             await _service.CriarAsync(dto);
 
             return Created(
                 "/api/proprietarios",
                 new { mensagem = "Proprietário cadastrado com sucesso." }
             );
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { mensagem = ex.Message });
-        }
     }
 
     [HttpPut("{id:int}")]
@@ -47,8 +40,6 @@ public async Task<IActionResult> Atualizar(
     int id,
     ProprietarioUpdateDto dto)
 {
-    try
-    {
         await _service.AtualizarAsync(id, dto);
 
         return Ok(new
@@ -56,33 +47,20 @@ public async Task<IActionResult> Atualizar(
             mensagem = "Proprietário atualizado com sucesso."
         });
     }
-    catch (ArgumentException ex)
-    {
-        return BadRequest(new
-        {
-            mensagem = ex.Message
-        });
-    }
-}
+ 
+
 
 [HttpDelete("{id:int}")]
 public async Task<IActionResult> Excluir(int id)
 {
-    try
-    {
         await _service.ExcluirAsync(id);
 
         return Ok(new
         {
             mensagem = "Proprietário excluído com sucesso."
         });
-    }
-    catch (ArgumentException ex)
-    {
-        return BadRequest(new
-        {
-            mensagem = ex.Message
-        });
-    }
+ 
 }
+
+
 }

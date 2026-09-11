@@ -2,6 +2,7 @@ using EstoqueVeiculos.Api.DTOs;
 using EstoqueVeiculos.Api.Models;
 using EstoqueVeiculos.Api.Repositories;
 using EstoqueVeiculos.Api.Validators;
+using EstoqueVeiculos.Api.Exceptions;
 
 
 namespace EstoqueVeiculos.Api.Services;
@@ -21,6 +22,15 @@ public class VeiculoService
 
     public async Task CriarAsync(VeiculoCreateDto dto)
     {
+
+         var tiposPermitidos = new[] { "Hatch", "Sedan", "SUV", "Picape" };
+
+if (!tiposPermitidos.Contains(dto.Tipo))
+{
+    throw new ArgumentException(
+        "O tipo do veículo deve ser Hatch, Sedan, SUV ou Picape."
+    );
+}
         if (string.IsNullOrWhiteSpace(dto.Marca))
             throw new ArgumentException("A marca é obrigatória.");
 
@@ -63,6 +73,8 @@ public class VeiculoService
 
         await _repository.CriarAsync(veiculo);
     }
+
+
     public async Task<VeiculoDetalheDto?> BuscarPorIdAsync(int id)
 {
     var veiculo = await _repository.BuscarPorIdAsync(id);
@@ -98,6 +110,21 @@ public async Task<List<Veiculo>> ListarAsync(
 
 public async Task AtualizarAsync(int id, VeiculoUpdateDto dto)
 {
+  var situacoesPermitidas = new[]
+{
+    "Disponível",
+    "Vendido",
+    "Reservado"
+};
+
+if (!situacoesPermitidas.Contains(dto.Situacao))
+{
+    throw new ArgumentException(
+        "A situação do veículo deve ser Disponível, Vendido ou Reservado."
+    );
+}
+ 
+      
     if (id <= 0)
         throw new ArgumentException("O veículo informado é inválido.");
 
@@ -128,7 +155,7 @@ public async Task AtualizarAsync(int id, VeiculoUpdateDto dto)
     var veiculo = await _repository.BuscarPorIdAsync(id);
 
     if (veiculo is null)
-        throw new ArgumentException("Veículo não encontrado.");
+        throw new NotFoundException("Veículo não encontrado.");
 
     if (dto.Situacao == "Vendido" && dto.NovoProprietario is null)
     {
@@ -186,5 +213,28 @@ public async Task AtualizarAsync(int id, VeiculoUpdateDto dto)
     };
 
     await _repository.VenderAsync(veiculo, proprietario);
+}
+
+ public async Task ExcluirAsync(int id)
+{
+    if (id <= 0)
+        throw new ArgumentException("O veículo informado é inválido.");
+
+    var veiculo = await _repository.BuscarPorIdAsync(id);
+
+    if (veiculo is null)
+        throw new NotFoundException("Veículo não encontrado.");
+
+    var possuiProprietarios =
+        await _proprietarioRepository.ExistePorVeiculoAsync(id);
+
+    if (possuiProprietarios)
+    {
+        throw new ArgumentException(
+            "Não é possível excluir um veículo que possui proprietários cadastrados."
+        );
+    }
+
+    await _repository.ExcluirAsync(id);
 }
 }

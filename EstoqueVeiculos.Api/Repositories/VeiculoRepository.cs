@@ -858,4 +858,23 @@ public class VeiculoRepository
             throw;
         }
     }
+ public async Task ExcluirAsync(int id)
+{
+    using var connection = _connectionFactory.CreateConnection();
+    await connection.OpenAsync();
+
+    using var command = connection.CreateCommand();
+
+    command.CommandText = @"
+        DELETE FROM VEICULO
+        WHERE ID = :id
+    ";
+
+    command.Parameters.Add(
+        new OracleParameter("id", id)
+    );
+
+    await command.ExecuteNonQueryAsync();
+}
+
 }

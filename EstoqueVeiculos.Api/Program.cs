@@ -1,54 +1,45 @@
 using EstoqueVeiculos.Api.Database;
 using EstoqueVeiculos.Api.Repositories;
 using EstoqueVeiculos.Api.Services;
-
-
+using EstoqueVeiculos.Api.Middleware;
 
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddSingleton<OracleConnectionFactory>();
-builder.Services.AddScoped<VeiculoRepository>();
-builder.Services.AddScoped<VeiculoService>();
-builder.Services.AddScoped<ProprietarioRepository>();
-builder.Services.AddScoped<ProprietarioService>();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Controllers
 builder.Services.AddControllers();
 
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Conexão com Oracle
+builder.Services.AddSingleton<OracleConnectionFactory>();
+
+// Repositories
+builder.Services.AddScoped<VeiculoRepository>();
+builder.Services.AddScoped<ProprietarioRepository>();
+
+// Services
+builder.Services.AddScoped<VeiculoService>();
+builder.Services.AddScoped<ProprietarioService>();
 
 
 var app = builder.Build();
 
-
-app.UseSwagger();
-app.UseSwaggerUI();
-
-app.MapGet("/", () => "API de Gestão de Estoque de Veículos");
-
-app.MapGet("/teste-oracle", async (OracleConnectionFactory connectionFactory) =>
+// Swagger somente em ambiente de desenvolvimento
+if (app.Environment.IsDevelopment())
 {
-    using var connection = connectionFactory.CreateConnection();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-    await connection.OpenAsync();
+// Middleware global para tratamento de exceções
+app.UseMiddleware<ExceptionMiddleware>();
 
-    using var command = connection.CreateCommand();
-
-    command.CommandText = "SELECT 1 FROM DUAL";
-
-    var resultado = await command.ExecuteScalarAsync();
-
-    return Results.Ok(new
-    {
-        mensagem = "Conexão com Oracle realizada com sucesso.",
-        resultado
-    });
-});
-
-
-
-
+app.UseHttpsRedirection();
 
 app.MapControllers();
 
 app.Run();
+
+

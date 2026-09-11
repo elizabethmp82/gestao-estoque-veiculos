@@ -2,6 +2,7 @@ using EstoqueVeiculos.Api.DTOs;
 using EstoqueVeiculos.Api.Models;
 using EstoqueVeiculos.Api.Repositories;
 using EstoqueVeiculos.Api.Validators;
+using EstoqueVeiculos.Api.Exceptions;
 
 namespace EstoqueVeiculos.Api.Services;
 
@@ -81,7 +82,7 @@ public class ProprietarioService
         await _proprietarioRepository.BuscarPorIdAsync(id);
 
     if (proprietario is null)
-        throw new ArgumentException("Proprietário não encontrado.");
+        throw new NotFoundException("Proprietário não encontrado.");
 
     proprietario.NomeCompleto = dto.NomeCompleto;
     proprietario.CPF = dto.CPF;
@@ -98,7 +99,7 @@ public async Task ExcluirAsync(int id)
         await _proprietarioRepository.BuscarPorIdAsync(id);
 
     if (proprietario is null)
-        throw new ArgumentException("Proprietário não encontrado.");
+       throw new NotFoundException("Proprietário não encontrado.");
 
     if (proprietario.DataVenda is null)
     {

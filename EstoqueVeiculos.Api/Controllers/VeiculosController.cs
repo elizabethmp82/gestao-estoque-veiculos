@@ -1,6 +1,7 @@
 using EstoqueVeiculos.Api.DTOs;
 using EstoqueVeiculos.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using EstoqueVeiculos.Api.Exceptions;
 
 namespace EstoqueVeiculos.Api.Controllers;
 
@@ -42,50 +43,41 @@ public async Task<IActionResult> BuscarPorId(int id)
     return Ok(veiculo);
 }
 
-    [HttpPost]
-    public async Task<IActionResult> Criar(VeiculoCreateDto dto)
-    {
-        try
-        {
-            await _service.CriarAsync(dto);
+   [HttpPost]
+   public async Task<IActionResult> Criar(VeiculoCreateDto dto)
+{
+    await _service.CriarAsync(dto);
 
-            return Created(
-                "/api/veiculos",
-                new
-                {
-                    mensagem = "Veículo cadastrado com sucesso."
-                }
-            );
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new
-            {
-                mensagem = ex.Message
-            });
-        }
-    }
+    return Created("/api/veiculos",
+        new { mensagem = "Veículo cadastrado com sucesso." });
+}
 
-    [HttpPut("{id:int}")]
+
+
+[HttpPut("{id:int}")]
 public async Task<IActionResult> Atualizar(int id, VeiculoUpdateDto dto)
 {
-    try
+    await _service.AtualizarAsync(id, dto);
+
+    return Ok(new
     {
-        await _service.AtualizarAsync(id, dto);
+        mensagem = "Veículo atualizado com sucesso."
+    });
+}
+
+
+[HttpDelete("{id:int}")]
+public async Task<IActionResult> Excluir(int id)
+{
+        await _service.ExcluirAsync(id);
 
         return Ok(new
         {
-            mensagem = "Veículo atualizado com sucesso."
+            mensagem = "Veículo excluído com sucesso."
         });
-    }
-    catch (ArgumentException ex)
-    {
-        return BadRequest(new
-        {
-            mensagem = ex.Message
-        });
-    }
 }
+
+
 
 
 }
