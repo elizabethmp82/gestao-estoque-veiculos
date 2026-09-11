@@ -12,6 +12,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 // Conexão com Oracle
 builder.Services.AddSingleton<OracleConnectionFactory>();
 
@@ -23,7 +35,6 @@ builder.Services.AddScoped<ProprietarioRepository>();
 builder.Services.AddScoped<VeiculoService>();
 builder.Services.AddScoped<ProprietarioService>();
 
-
 var app = builder.Build();
 
 // Swagger somente em ambiente de desenvolvimento
@@ -32,6 +43,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Permite requisições do frontend React
+app.UseCors("Frontend");
 
 // Middleware global para tratamento de exceções
 app.UseMiddleware<ExceptionMiddleware>();
