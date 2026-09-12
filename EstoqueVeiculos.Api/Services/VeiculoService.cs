@@ -156,13 +156,16 @@ if (!situacoesPermitidas.Contains(dto.Situacao))
 
     if (veiculo is null)
         throw new NotFoundException("Veículo não encontrado.");
+    var marcandoComoVendido =
+    veiculo.Situacao != "Vendido" &&
+    dto.Situacao == "Vendido";    
 
-    if (dto.Situacao == "Vendido" && dto.NovoProprietario is null)
-    {
+    if (marcandoComoVendido && dto.NovoProprietario is null)
+     {
         throw new ArgumentException(
-            "Para marcar o veículo como vendido, é obrigatório informar o novo proprietário."
-        );
-    }
+         "Para marcar o veículo como vendido, é obrigatório informar o novo proprietário."
+      );
+      }
 
     veiculo.Marca = dto.Marca;
     veiculo.Modelo = dto.Modelo;
@@ -173,11 +176,11 @@ if (!situacoesPermitidas.Contains(dto.Situacao))
     veiculo.Situacao = dto.Situacao;
     veiculo.Quilometragem = dto.Quilometragem;
 
-    if (dto.Situacao != "Vendido")
-    {
+    if (!marcandoComoVendido)
+     {
         await _repository.AtualizarAsync(veiculo);
         return;
-    }
+     }
 
     var novoProprietario = dto.NovoProprietario!;
 

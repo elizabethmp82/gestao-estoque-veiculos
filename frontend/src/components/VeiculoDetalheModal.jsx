@@ -17,12 +17,19 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import IconButton from '@mui/material/IconButton';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+
 
 export default function VeiculoDetalheModal({
   open,
   onClose,
   veiculo,
   onAdicionarProprietario,
+  onEditarProprietario,
+  onExcluirProprietario,
 }){
   if (!veiculo) {
     return null;
@@ -36,12 +43,14 @@ export default function VeiculoDetalheModal({
   }
 
   function formatarData(data) {
-    if (!data) {
-      return 'Atual';
-    }
-
-    return new Date(data).toLocaleDateString('pt-BR');
+  if (!data) {
+    return 'Atual';
   }
+
+  return new Date(data).toLocaleDateString('pt-BR', {
+    timeZone: 'UTC',
+  });
+}
 
   return (
     <Dialog
@@ -50,8 +59,22 @@ export default function VeiculoDetalheModal({
       fullWidth
       maxWidth="md"
     >
-      <DialogTitle>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
         Detalhes do veículo
+
+        <IconButton
+          onClick={onClose}
+          size="small"
+          aria-label="Fechar"
+        >
+         <CloseIcon />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent dividers>
@@ -190,6 +213,7 @@ export default function VeiculoDetalheModal({
                 <TableCell>Aquisição</TableCell>
                 <TableCell>Venda</TableCell>
                 <TableCell>Observação</TableCell>
+                <TableCell  align="center">Ações</TableCell>
               </TableRow>
             </TableHead>
 
@@ -215,13 +239,29 @@ export default function VeiculoDetalheModal({
                   <TableCell>
                     {proprietario.observacao || '-'}
                   </TableCell>
+
+                  <TableCell align="center">
+                     <IconButton
+                        color="primary"
+                        onClick={() => onEditarProprietario(proprietario)}
+                         >
+                      <EditIcon />
+                     </IconButton>
+
+                     <IconButton
+                      color="error"
+                      onClick={() => onExcluirProprietario(proprietario)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>            
+                  </TableCell>
                 </TableRow>
               ))}
 
               {!veiculo.proprietarios?.length && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     align="center"
                     sx={{ py: 4 }}
                   >
@@ -233,12 +273,7 @@ export default function VeiculoDetalheModal({
           </Table>
         </TableContainer>
       </DialogContent>
-
-      <DialogActions>
-        <Button onClick={onClose}>
-          Fechar
-        </Button>
-      </DialogActions>
     </Dialog>
+    
   );
 }

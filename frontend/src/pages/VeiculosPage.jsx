@@ -15,6 +15,8 @@ import {
   TableRow,
   TextField,
   Typography,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -24,6 +26,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import VeiculoFormModal from '../components/VeiculoFormModal';
 import VeiculoDetalheModal from '../components/VeiculoDetalheModal';
 import ProprietarioFormModal from '../components/ProprietarioFormModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 import api from '../services/api';
 
@@ -35,6 +38,11 @@ export default function VeiculosPage() {
   const [modalDetalheAberto, setModalDetalheAberto] = useState(false);
   const [veiculoSelecionado, setVeiculoSelecionado] = useState(null);
   const [modalProprietarioAberto, setModalProprietarioAberto] = useState(false);
+  const [proprietarioSelecionado, setProprietarioSelecionado] = useState(null);
+  const [veiculoEdicao, setVeiculoEdicao] = useState(null);
+  const [mensagem, setMensagem] = useState({ aberta: false,texto: '', tipo: 'success',});
+  const [confirmacao, setConfirmacao] = useState({ aberta: false,  tipo: null,  item: null,});
+  const [processandoConfirmacao, setProcessandoConfirmacao] = useState(false);
 
   useEffect(() => {
     async function buscarVeiculos() {
@@ -102,6 +110,95 @@ export default function VeiculosPage() {
     );
   }
 }
+   function editarProprietario(proprietario) {
+  setProprietarioSelecionado(proprietario);
+  setModalProprietarioAberto(true);
+}
+
+function solicitarExclusaoVeiculo(veiculo) {
+  setConfirmacao({
+    aberta: true,
+    tipo: 'veiculo',
+    item: veiculo,
+  });
+}
+
+function solicitarExclusaoProprietario(proprietario) {
+  setConfirmacao({
+    aberta: true,
+    tipo: 'proprietario',
+    item: proprietario,
+  });
+}
+
+async function confirmarExclusao() {
+  if (!confirmacao.item) {
+    return;
+  }
+
+  try {
+    setProcessandoConfirmacao(true);
+
+    if (confirmacao.tipo === 'veiculo') {
+      await api.delete(`/Veiculos/${confirmacao.item.id}`);
+
+      await filtrarVeiculos();
+
+      mostrarMensagem(
+        'Veículo excluído com sucesso.',
+        'success'
+      );
+    }
+
+    if (confirmacao.tipo === 'proprietario') {
+      await api.delete(
+        `/Proprietarios/${confirmacao.item.id}`
+      );
+
+      await atualizarVeiculoSelecionado();
+
+      mostrarMensagem(
+        'Proprietário excluído com sucesso.',
+        'success'
+      );
+    }
+
+    setConfirmacao({
+      aberta: false,
+      tipo: null,
+      item: null,
+    });
+  } catch (error) {
+    setConfirmacao({
+      aberta: false,
+      tipo: null,
+      item: null,
+    });
+
+    mostrarMensagem(
+      error.response?.data?.mensagem ||
+        'Não foi possível concluir a exclusão.',
+      'error'
+    );
+  } finally {
+    setProcessandoConfirmacao(false);
+  }
+}
+   
+function editarVeiculo(veiculo) {
+  setVeiculoEdicao(veiculo);
+  setModalVeiculoAberto(true);
+}
+
+
+
+function mostrarMensagem(texto, tipo = 'success') {
+  setMensagem({
+    aberta: true,
+    texto,
+    tipo,
+  });
+}
 
   return (
     <Box
@@ -154,7 +251,10 @@ export default function VeiculosPage() {
              variant="contained"
              startIcon={<AddIcon />}
              size="large"
-               onClick={() => setModalVeiculoAberto(true)}
+               onClick={() => {
+                 setVeiculoEdicao(null);
+                 setModalVeiculoAberto(true);
+               }}
               sx={{
                  alignSelf: {
                  xs: 'stretch',
@@ -306,6 +406,7 @@ export default function VeiculosPage() {
                         <Button
                           size="small"
                           startIcon={<EditIcon />}
+                          onClick={() => editarVeiculo(veiculo)}
                         >
                           Editar
                         </Button>
@@ -314,6 +415,7 @@ export default function VeiculosPage() {
                           size="small"
                           color="error"
                           startIcon={<DeleteIcon />}
+                          onClick={() => solicitarExclusaoVeiculo(veiculo)}
                         >
                           Excluir
                         </Button>
@@ -342,22 +444,89 @@ export default function VeiculosPage() {
         </Paper>
       </Container>
       <VeiculoFormModal
-        open={modalVeiculoAberto}
-        onClose={() => setModalVeiculoAberto(false)}
-        onSalvo={filtrarVeiculos}
-      />
+       open={modalVeiculoAberto}
+       onClose={() => {
+         setModalVeiculoAberto(false);
+         setVeiculoEdicao(null);
+       }}
+       onSalvo={filtrarVeiculos}
+       veiculo={veiculoEdicao}
+     />
       <VeiculoDetalheModal
         open={modalDetalheAberto}
         onClose={() => setModalDetalheAberto(false)}
         veiculo={veiculoSelecionado}
-        onAdicionarProprietario={() => setModalProprietarioAberto(true)}
-       />
+
+        onAdicionarProprietario={() => {
+        setProprietarioSelecionado(null);
+        setModalProprietarioAberto(true);
+          }}
+
+        onEditarProprietario={editarProprietario}
+        onExcluirProprietario={solicitarExclusaoProprietario}
+     />
      <ProprietarioFormModal
-          open={modalProprietarioAberto}
-          onClose={() => setModalProprietarioAberto(false)}
-          veiculoId={veiculoSelecionado?.id}
-          onSalvo={atualizarVeiculoSelecionado}
-       />
+  open={modalProprietarioAberto}
+
+  onClose={() => {
+    setModalProprietarioAberto(false);
+    setProprietarioSelecionado(null);
+  }}
+
+  veiculoId={veiculoSelecionado?.id}
+  proprietario={proprietarioSelecionado}
+  onSalvo={atualizarVeiculoSelecionado}
+/>
+
+ <ConfirmDialog
+  open={confirmacao.aberta}
+  title="Confirmar exclusão"
+  message={
+    confirmacao.tipo === 'veiculo'
+      ? `Deseja realmente excluir o veículo ${confirmacao.item?.marca} ${confirmacao.item?.modelo}?`
+      : `Deseja realmente excluir o proprietário ${confirmacao.item?.nomeCompleto}?`
+  }
+  confirmText="Excluir"
+  onConfirm={confirmarExclusao}
+  onClose={() =>
+    setConfirmacao({
+      aberta: false,
+      tipo: null,
+      item: null,
+    })
+  }
+  loading={processandoConfirmacao}
+/>
+
+
+  <Snackbar
+  open={mensagem.aberta}
+  autoHideDuration={3500}
+  onClose={() =>
+    setMensagem((anterior) => ({
+      ...anterior,
+      aberta: false,
+    }))
+  }
+  anchorOrigin={{
+    vertical: 'top',
+    horizontal: 'right',
+  }}
+>
+  <Alert
+    severity={mensagem.tipo}
+    variant="filled"
+    onClose={() =>
+      setMensagem((anterior) => ({
+        ...anterior,
+        aberta: false,
+      }))
+    }
+  >
+    {mensagem.texto}
+  </Alert>
+</Snackbar> 
     </Box>
+    
   );
 }

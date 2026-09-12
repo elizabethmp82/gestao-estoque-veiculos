@@ -33,7 +33,7 @@ public class ProprietarioRepository
                 OBSERVACAO
             FROM PROPRIETARIO
             WHERE VEICULOID = :veiculoId
-            ORDER BY DATAAQUISICAO
+            ORDER BY DATAAQUISICAO DESC
         ";
 
         command.Parameters.Add(

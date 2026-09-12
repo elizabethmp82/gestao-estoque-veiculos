@@ -4,11 +4,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Grid,
   MenuItem,
   TextField,
+  Typography,
 } from '@mui/material';
-import { useState } from 'react';
+
+import { useEffect, useState } from 'react';
 import api from '../services/api';
 
 const estadoInicial = {
@@ -20,15 +23,57 @@ const estadoInicial = {
   tipo: '',
   placa: '',
   quilometragem: '',
+  situacao: 'Disponível',
+
+  novoProprietario: {
+    nomeCompleto: '',
+    cpf: '',
+    dataAquisicao: '',
+    observacao: '',
+  },
 };
 
 export default function VeiculoFormModal({
   open,
   onClose,
   onSalvo,
+  veiculo,
 }) {
   const [form, setForm] = useState(estadoInicial);
   const [salvando, setSalvando] = useState(false);
+  
+
+  const editando = Boolean(veiculo);
+
+  const novaVenda =
+  editando &&
+  veiculo?.situacao !== 'Vendido' &&
+  form.situacao === 'Vendido';
+
+  useEffect(() => {
+    if (veiculo) {
+      setForm({
+        marca: veiculo.marca ?? '',
+        modelo: veiculo.modelo ?? '',
+        ano: veiculo.ano ?? '',
+        cor: veiculo.cor ?? '',
+        preco: veiculo.preco ?? '',
+        tipo: veiculo.tipo ?? '',
+        placa: veiculo.placa ?? '',
+        quilometragem: veiculo.quilometragem ?? '',
+        situacao: veiculo.situacao ?? 'Disponível',
+
+        novoProprietario: {
+          nomeCompleto: '',
+          cpf: '',
+          dataAquisicao: '',
+          observacao: '',
+        },
+      });
+    } else {
+      setForm(estadoInicial);
+    }
+  }, [veiculo, open]);
 
   function alterarCampo(event) {
     const { name, value } = event.target;
@@ -39,27 +84,61 @@ export default function VeiculoFormModal({
     }));
   }
 
+  function alterarProprietario(event) {
+    const { name, value } = event.target;
+
+    setForm((anterior) => ({
+      ...anterior,
+      novoProprietario: {
+        ...anterior.novoProprietario,
+        [name]: value,
+      },
+    }));
+  }
+
   async function salvar() {
     try {
       setSalvando(true);
 
-      await api.post('/Veiculos', {
-        marca: form.marca,
-        modelo: form.modelo,
-        ano: Number(form.ano),
-        cor: form.cor,
-        preco: Number(form.preco),
-        tipo: form.tipo,
-        placa: form.placa,
-        quilometragem: Number(form.quilometragem),
-      });
+      if (editando) {
+        const payload = {
+          marca: form.marca,
+          modelo: form.modelo,
+          ano: Number(form.ano),
+          cor: form.cor,
+          preco: Number(form.preco),
+          tipo: form.tipo,
+          situacao: form.situacao,
+          quilometragem: Number(form.quilometragem),
+          novoProprietario:
+          novaVenda
+              ? form.novoProprietario
+              : null,
+        };
+
+        await api.put(`/Veiculos/${veiculo.id}`, payload);
+      } else {
+        await api.post('/Veiculos', {
+          marca: form.marca,
+          modelo: form.modelo,
+          ano: Number(form.ano),
+          cor: form.cor,
+          preco: Number(form.preco),
+          tipo: form.tipo,
+          placa: form.placa,
+          quilometragem: Number(form.quilometragem),
+        });
+      }
 
       setForm(estadoInicial);
 
-      onSalvo();
+      await onSalvo();
       onClose();
     } catch (error) {
-      console.error('Erro ao cadastrar veículo:', error);
+      alert(
+        error.response?.data?.mensagem ||
+          'Erro ao salvar veículo.'
+      );
     } finally {
       setSalvando(false);
     }
@@ -78,15 +157,11 @@ export default function VeiculoFormModal({
       maxWidth="md"
     >
       <DialogTitle>
-        Cadastrar veículo
+        {editando ? 'Editar veículo' : 'Cadastrar veículo'}
       </DialogTitle>
 
       <DialogContent dividers>
-        <Grid
-          container
-          spacing={2}
-          sx={{ mt: 0.5 }}
-        >
+        <Grid container spacing={2} sx={{ mt: 0.5 }}>
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               label="Marca"
@@ -157,6 +232,7 @@ export default function VeiculoFormModal({
               onChange={alterarCampo}
               fullWidth
               required
+              disabled={editando}
             />
           </Grid>
 
@@ -183,7 +259,102 @@ export default function VeiculoFormModal({
               required
             />
           </Grid>
+
+          {editando && (
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                select
+                label="Situação"
+                name="situacao"
+                value={form.situacao}
+                onChange={alterarCampo}
+                fullWidth
+                required
+              >
+                <MenuItem value="Disponível">
+                  Disponível
+                </MenuItem>
+
+                <MenuItem value="Reservado">
+                  Reservado
+                </MenuItem>
+
+                <MenuItem value="Vendido">
+                  Vendido
+                </MenuItem>
+              </TextField>
+            </Grid>
+          )}
         </Grid>
+
+        {novaVenda && (
+          <>
+            <Divider sx={{ my: 3 }} />
+
+            <Typography
+              variant="h6"
+              fontWeight={700}
+              sx={{ mb: 2 }}
+            >
+              Novo proprietário
+            </Typography>
+
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  label="Nome completo"
+                  name="nomeCompleto"
+                  value={form.novoProprietario.nomeCompleto}
+                  onChange={alterarProprietario}
+                  fullWidth
+                  required
+                />
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  label="CPF"
+                  name="cpf"
+                  value={form.novoProprietario.cpf}
+                  onChange={alterarProprietario}
+                  fullWidth
+                  required
+                />
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  label="Data de aquisição"
+                  name="dataAquisicao"
+                  type="date"
+                  value={
+                    form.novoProprietario.dataAquisicao
+                  }
+                  onChange={alterarProprietario}
+                  fullWidth
+                  required
+                  slotProps={{
+                    inputLabel: {
+                      shrink: true,
+                    },
+                  }}
+                />
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  label="Observação"
+                  name="observacao"
+                  value={
+                    form.novoProprietario.observacao
+                  }
+                  onChange={alterarProprietario}
+                  fullWidth
+                />
+              </Grid>
+            </Grid>
+          </>
+        )}
       </DialogContent>
 
       <DialogActions>
